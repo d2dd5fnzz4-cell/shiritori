@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>限界しりとり対戦</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/* VOICE: クイズ番組のセットみたいに、緊張感があって元気
+   IDEA: 早押しクイズの解答パネル
+   PICTURE: 黄色い大きな「頭の文字」パネルと赤い文字数バッジ、減っていくタイマー
+   COLOUR and TYPE: 赤 #e3342a 主役、黄 #ffd23f パネル、白地に墨。Dela Gothic One + Zen Kaku Gothic New
+   LAYOUT: 上に赤い帯、中央にお題パネル、横または下に参加者と履歴 */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#1f0b0a);--ink:light-dark(#161313,#fff3ef);--sub:light-dark(#6b6461,#c9b3ad);
+--red:#e3342a;--redd:light-dark(#b8241c,#ff5a4f);--yel:#ffd23f;--panel:light-dark(#f6f1ee,#2e1513);--line:light-dark(#e6dfdb,#4a2522)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Zen Kaku Gothic New",system-ui,sans-serif;overflow-x:clip}
+.top{background:var(--red);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px max(5vw,16px)}
+.brand{font:400 26px/1.05 "Dela Gothic One",sans-serif;letter-spacing:.02em}
+.brand small{display:block;font:700 13px/1.4 "Zen Kaku Gothic New",sans-serif;opacity:.9;margin-top:4px}
+.conn{font-size:13px;font-weight:700;background:rgba(0,0,0,.18);padding:6px 10px;border-radius:99px;white-space:nowrap}
+.conn::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#9ee69a;margin-right:6px;vertical-align:1px}
+.conn.off::before{background:#ffd23f}
+main{max-width:1100px;margin:0 auto}
+.band{padding:clamp(24px,4vw,48px) max(5vw,16px)}
+h1{font:400 clamp(28px,6vw,44px)/1.1 "Dela Gothic One",sans-serif;margin:0 0 12px;text-wrap:balance}
+h2{font-size:17px;margin:22px 0 8px}
+.lead{color:var(--sub);max-width:36em;margin:0 0 24px}
+.entry{max-width:460px;display:grid;gap:12px}
+label{display:grid;gap:6px;font-weight:700;font-size:15px}
+input,select{font:inherit;font-size:17px;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);min-height:48px;width:100%}
+input:focus,select:focus,.btn:focus-visible{outline:3px solid var(--yel);outline-offset:2px;border-color:var(--red)}
+.btn{font:inherit;font-weight:900;font-size:17px;min-height:48px;padding:10px 20px;border-radius:12px;border:2px solid var(--ink);background:var(--bg);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 4px 0 var(--redd)}
+.btn.primary:active{transform:translateY(3px);box-shadow:0 1px 0 var(--redd)}
+.btn.ghost{border-color:var(--line);color:var(--sub);font-weight:700;font-size:15px}
+.btn.small{min-height:40px;padding:6px 14px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:default}
+.or{text-align:center;color:var(--sub);font-size:14px;margin:6px 0}
+.msg{color:var(--redd);font-weight:700;min-height:1.5em;margin:0}
+.hint{color:var(--sub);font-size:15px;margin:8px 0}
+.rules{margin:28px 0 0;padding:16px 18px;background:var(--panel);border-radius:14px;font-size:15px;max-width:640px}
+.rules ul{margin:6px 0 0;padding-left:1.2em}
+.codebox{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--yel);color:#161313;border-radius:16px;padding:16px 20px;box-shadow:0 6px 0 #d9a91a}
+.codebox span{font-weight:700}
+.codebox b{font:400 clamp(40px,10vw,60px)/1 "Dela Gothic One",sans-serif;letter-spacing:.12em}
+.codebox .btn{border-color:#161313;background:#fff;color:#161313}
+.plist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.plist li{display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--line);border-radius:12px;font-weight:700}
+.plist li .tag{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--panel);color:var(--sub);font-weight:700}
+.plist li .sc{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--sub);white-space:nowrap}
+.plist li.cur{border-color:var(--red);background:color-mix(in srgb,var(--red) 10%,var(--bg))}
+.plist li.out{opacity:.45;text-decoration:line-through}
+.ctl{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-top:22px}
+.ctl label{width:auto}
+.play{display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:820px){.play{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}}
+.prompt{display:flex;align-items:center;justify-content:center;gap:clamp(14px,4vw,28px);padding:clamp(18px,4vw,32px) 12px;background:var(--panel);border-radius:22px}
+.head{width:clamp(120px,32vw,190px);aspect-ratio:1;display:grid;place-items:center;background:var(--yel);color:#161313;border-radius:20px;font:400 clamp(72px,20vw,124px)/1 "Dela Gothic One",sans-serif;box-shadow:0 8px 0 #d9a91a,inset 0 -6px 0 rgba(0,0,0,.08)}
+.len{display:grid;place-items:center;width:clamp(96px,24vw,140px);aspect-ratio:1;border-radius:50%;background:var(--red);color:#fff;box-shadow:0 8px 0 var(--redd)}
+.len b{font:400 clamp(44px,12vw,72px)/1 "Dela Gothic One",sans-serif}
+.len span{font-weight:900;font-size:15px;margin-top:-18px}
+.pop{animation:pop .35s ease-out}
+@keyframes pop{from{transform:scale(.8)}to{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.pop{animation:none}.timer i{transition:none!important}}
+.timer{position:relative;height:22px;border-radius:99px;background:var(--panel);margin:22px 0 8px;overflow:hidden}
+.timer i{position:absolute;inset:0 auto 0 0;background:var(--red);border-radius:99px;transition:width .1s linear}
+.timer i.low{background:#ff8a00}
+.timer span{position:absolute;right:10px;top:0;line-height:22px;font-size:13px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+.turn{font-size:clamp(20px,4.5vw,26px);font-weight:900;margin:14px 0 10px;text-align:center}
+.turn.mine{color:var(--redd)}
+.answer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+.answer input{font-size:22px;font-weight:700;min-height:58px}
+.answer .btn{min-height:58px}
+.cnt{grid-column:1/-1;font-size:14px;color:var(--sub);font-weight:700;font-variant-numeric:tabular-nums}
+.cnt.ok{color:#1f8f4e}
+.err{color:var(--redd);font-weight:900;min-height:1.6em;margin:6px 0 0}
+.note{background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 14px;font-weight:900;margin:0 0 14px}
+.hist{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:360px;overflow:auto}
+.hist li{display:flex;justify-content:space-between;gap:10px;padding:8px 12px;background:var(--panel);border-radius:10px}
+.hist li b{font-size:18px;overflow-wrap:anywhere}
+.hist li span{color:var(--sub);font-size:13px;white-space:nowrap;align-self:center}
+.hist li:first-child{outline:2px solid var(--yel)}
+.empty{color:var(--sub);font-size:14px}
+.winner{font:400 clamp(34px,8vw,56px)/1.1 "Dela Gothic One",sans-serif;margin:8px 0 6px;color:var(--redd);text-wrap:balance}
+.foot{max-width:1100px;margin:0 auto;padding:8px max(5vw,16px) 40px;color:var(--sub);font-size:13px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header class="top"><div class="brand">限界しりとり<small>ともだちオンライン対戦</small></div><div id="conn" class="conn off">未接続</div></header>
+<main>
+<section id="vEntry" class="band">
+  <h1>ともだちと、限界しりとり。</h1>
+  <p class="lead">毎ターン「頭の文字」と「文字数」のお題が出ます。時間内に答えられなかったらアウト。最後まで残った人の勝ちです。</p>
+  <div class="entry">
+    <label for="nick">ニックネーム<input id="nick" maxlength="12" autocomplete="off" placeholder="例:きよ"></label>
+    <button id="mk" class="btn primary" type="button">部屋をつくる</button>
+    <div class="or">または、友達の部屋に入る</div>
+    <label for="codeIn">部屋コード<input id="codeIn" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="4けたの数字"></label>
+    <button id="jn" class="btn" type="button">参加する</button>
+    <p id="entryMsg" class="msg"></p>
+  </div>
+  <div class="rules"><b>ルール</b>
+    <ul>
+      <li>お題が「す 6」なら、「す」から始まる6文字の言葉(例:すーつけーす)。「8+」は8文字以上。</li>
+      <li>ひらがな・カタカナで入力。のばし棒「ー」や小さい字も1文字に数えます。</li>
+      <li>最後が「ー」なら、その前の字でつなぎます。小さい字は大きく(「ゃ」なら「や」)。</li>
+      <li>「ん」で終わる、時間切れ、はアウト。同じ言葉は使えません。</li>
+    </ul>
+  </div>
+</section>
+
+<section id="vLobby" class="band" hidden>
+  <div class="codebox"><span>部屋コード</span><b id="codeShow"></b><button id="copyCode" class="btn small" type="button">招待文をコピー</button></div>
+  <p class="hint">「招待文をコピー」でURLとコードをまとめてコピーできます。LINEなどで友達に送ってね。</p>
+  <h2>参加者</h2>
+  <ul id="plist" class="plist"></ul>
+  <div id="hostCtl" class="ctl">
+    <label for="limit">1ターンの制限時間
+      <select id="limit"><option value="10">10秒</option><option value="15" selected>15秒</option><option value="20">20秒</option><option value="30">30秒</option></select>
+    </label>
+    <button id="start" class="btn primary" type="button">スタート</button>
+  </div>
+  <p id="waitHost" class="hint"></p>
+  <p><button id="leave1" class="btn ghost" type="button">部屋を出る</button></p>
+</section>
+
+<section id="vPlay" class="band" hidden>
+  <div class="play">
+    <div>
+      <p id="note" class="note" hidden></p>
+      <div class="prompt"><div class="head" id="pHead"></div><div class="len"><b id="pLen"></b><span>文字</span></div></div>
+      <div class="timer"><i id="bar"></i><span id="sec"></span></div>
+      <p id="turnMsg" class="turn"></p>
+      <form id="f" class="answer" autocomplete="off">
+        <input id="w" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" placeholder="ひらがなで入力">
+        <button class="btn primary" id="send" type="submit">送る</button>
+        <span id="cnt" class="cnt"></span>
+      </form>
+      <p id="err" class="err"></p>
+    </div>
+    <div>
+      <h2 style="margin-top:0">プレイヤー</h2>
+      <ul id="pl2" class="plist"></ul>
+      <h2>これまでの言葉</h2>
+      <ol id="hist" class="hist"></ol>
+    </div>
+  </div>
+</section>
+
+<section id="vOver" class="band" hidden>
+  <p class="hint" id="overNote"></p>
+  <div class="winner" id="winner"></div>
+  <h2>結果</h2>
+  <ul id="pl3" class="plist"></ul>
+  <div class="ctl" id="overHost">
+    <button id="again" class="btn primary" type="button">もう一回</button>
+    <button id="toLobby" class="btn" type="button">ロビーにもどる</button>
+  </div>
+  <p id="overWait" class="hint"></p>
+  <h2>出た言葉</h2>
+  <ol id="hist2" class="hist"></ol>
+  <p><button id="leave2" class="btn ghost" type="button">部屋を出る</button></p>
+</section>
+</main>
+<p class="foot">言葉が実在するかどうかは自動では判定しません。あやしい言葉はみんなでツッコんでね。</p>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+{
+const $=s=>document.querySelector(s);
+const PREFIX='genkai-shiritori-kiyo-';
+const HEADS='あいうえおかきくけこさしすせそたちつてとなにのはひふへほまみむめもやゆよらりれわ'.split('');
+const LENS=[[2,1],[3,3],[4,4],[5,4],[6,3],[7,2],[8,1]];
+const BIG={'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お','っ':'つ','ゃ':'や','ゅ':'ゆ','ょ':'よ','ゎ':'わ','ゕ':'か','ゖ':'け','を':'お','ぢ':'じ','づ':'ず','ゔ':'ぶ'};
+const norm=s=>String(s).trim().replace(/[\s　]/g,'').replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/[-‐－−ｰ〜～—]/g,'ー');
+const tailOf=w=>{const t=w.replace(/ー+$/,'');if(!t)return '';const c=t[t.length-1];return BIG[c]||c};
+const pickLen=()=>{const tot=LENS.reduce((a,b)=>a+b[1],0);let r=Math.random()*tot;for(const[l,wt]of LENS){if((r-=wt)<0)return l}return 5};
+const lenLabel=l=>l>=8?'8+':String(l);
+const okLen=(w,l)=>l>=8?w.length>=8:w.length===l;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+
+let peer=null,role=null,code=null,myId=null,status='',subN=0,lastT=null;
+/* host */
+let hs=null,players=[],conns=new Map(),hostUsed=new Set(),lastPub=0;
+/* guest */
+let gConn=null,gSt=null,gPlayers=[],gRecv=0;
+
+try{$('#nick').value=localStorage.getItem('gs-nick')||''}catch(e){}
+try{const m=location.hash.match(/^#(\d{4})$/);if(m)$('#codeIn').value=m[1]}catch(e){}
+
+function setStatus(t,ok){status=t;const c=$('#conn');c.textContent=t;c.classList.toggle('off',!ok)}
+setStatus('未接続',false);
+
+/* ---------- ホスト ---------- */
+function hostBroadcast(){
+  lastPub=Date.now();
+  const s={...hs};delete s.deadline;
+  if(hs.phase==='play')s.remain=Math.max(0,hs.deadline-Date.now());
+  const pl=players.map(p=>({id:p.id,nick:p.nick}));
+  for(const[id,c]of conns){if(c.open){try{c.send({type:'st',st:s,players:pl,you:id})}catch(e){}}}
+  render();
+}
+function nextTurn(){
+  const n=hs.order.length;let i=hs.cur;
+  for(let k=0;k<n;k++){i=(i+1)%n;if(hs.alive[i])break}
+  hs.cur=i;hs.t++;hs.len=pickLen();hs.deadline=Date.now()+hs.limit*1000;
+}
+function eliminate(reason,newHead){
+  hs.alive[hs.cur]=0;hs.err=null;
+  hs.note=`${hs.names[hs.cur]} アウト!(${reason})`;
+  if(newHead)hs.head=newHead;
+  const alive=hs.alive.filter(Boolean).length;
+  if(hs.order.length===1||alive<=1){hs.phase='over';hs.t++;hs.win=hs.order.length>1?hs.alive.indexOf(1):-1;return}
+  nextTurn();
+}
+function judge(from,sub){
+  if(hs.phase!=='play'||hs.order[hs.cur]!==from||sub.t!==hs.t||sub.g!==hs.g)return;
+  const w=norm(sub.w||'').slice(0,30);
+  const err=m=>{hs.err={p:from,n:sub.n,m};hostBroadcast()};
+  if(!w)return err('入力してね');
+  if(!/^[ぁ-ゖー]+$/.test(w))return err('ひらがな・カタカナだけで入力してね');
+  if(w[0]!==hs.head)return err(`「${hs.head}」から始めてね`);
+  if(!okLen(w,hs.len))return err(`${lenLabel(hs.len)}文字じゃないよ(いま${w.length}文字)`);
+  if(hostUsed.has(w))return err('その言葉はもう出たよ');
+  if(!tailOf(w))return err('その言葉は使えないよ');
+  hostUsed.add(w);
+  hs.hist.push({w,p:hs.cur});if(hs.hist.length>60)hs.hist.shift();
+  hs.score[hs.cur]++;hs.err=null;hs.note=null;
+  if(w.replace(/ー+$/,'').endsWith('ん'))eliminate(`「${w}」が「ん」で終わった`,rnd(HEADS));
+  else{hs.head=tailOf(w);nextTurn()}
+  hostBroadcast();
+}
+function startGame(){
+  if(role!=='host'||!players.length)return;
+  const limit=+$('#limit').value||15;
+  hs={phase:'play',g:(hs&&hs.g||0)+1,limit,order:players.map(p=>p.id),names:players.map(p=>p.nick),
+      alive:players.map(()=>1),score:players.map(()=>0),cur:Math.floor(Math.random()*players.length),t:1,
+      head:rnd(HEADS),len:pickLen(),hist:[],note:null,err:null,win:-1,deadline:Date.now()+limit*1000+2000};
+  hostUsed=new Set();hostBroadcast();
+}
+function hostTick(){
+  if(role!=='host'||!hs)return;
+  if(hs.phase==='play'){
+    const P=hs.order[hs.cur];
+    if(!players.some(p=>p.id===P)){eliminate('部屋から抜けた');hostBroadcast();return}
+    if(Date.now()>=hs.deadline){eliminate('時間切れ');hostBroadcast();return}
+    if(Date.now()-lastPub>1000)hostBroadcast();
+  }
+}
+function createRoom(nick,tries=0){
+  const c=String(Math.floor(1000+Math.random()*9000));
+  setStatus('部屋をつくっています…',false);
+  const p=new Peer(PREFIX+c);
+  p.on('open',()=>{
+    peer=p;role='host';code=c;myId='host';
+    players=[{id:'host',nick}];hs={phase:'lobby',g:0,limit:+$('#limit').value||15};
+    setStatus('部屋オープン中',true);hostBroadcast();
+  });
+  p.on('error',e=>{
+    if(e.type==='unavailable-id'&&tries<5){try{p.destroy()}catch(_){}createRoom(nick,tries+1);return}
+    if(!role){entryErr('部屋をつくれませんでした。通信環境を確認して、もう一度ためしてね。');try{p.destroy()}catch(_){}}
+    else setStatus('通信エラー',false);
+  });
+  p.on('disconnected',()=>{if(role==='host'){setStatus('再接続中…',false);try{p.reconnect()}catch(_){}}});
+  p.on('connection',conn=>{
+    conn.on('data',d=>{
+      if(!d||typeof d!=='object')return;
+      if(d.type==='hello'){
+        const nick=String(d.nick||'だれか').slice(0,12);
+        conns.set(conn.peer,conn);
+        const ex=players.find(x=>x.id===conn.peer);
+        if(ex)ex.nick=nick;else players.push({id:conn.peer,nick});
+        hostBroadcast();
+      }else if(d.type==='sub'){judge(conn.peer,d)}
+    });
+    const drop=()=>{conns.delete(conn.peer);players=players.filter(x=>x.id!==conn.peer);if(hs&&hs.phase!=='play')hostBroadcast();else render()};
+    conn.on('close',drop);conn.on('error',drop);
+  });
+}
+
+/* ---------- ゲスト ---------- */
+function joinRoom(c,nick){
+  setStatus('部屋をさがしています…',false);
+  const p=new Peer();
+  let opened=false;
+  const timer=setTimeout(()=>{if(!opened){entryErr('部屋が見つかりませんでした。コードが合っているか、ホストがページを開いたままか確認してね。');try{p.destroy()}catch(_){}setStatus('未接続',false)}},12000);
+  p.on('open',id=>{
+    const conn=p.connect(PREFIX+c,{reliable:true});
+    conn.on('open',()=>{
+      opened=true;clearTimeout(timer);
+      peer=p;role='guest';code=c;myId=id;gConn=conn;
+      conn.send({type:'hello',nick});setStatus('参加中',true);render();
+    });
+    conn.on('data',d=>{
+      if(!d||d.type!=='st')return;
+      gSt=d.st;gPlayers=Array.isArray(d.players)?d.players:[];myId=d.you||myId;gRecv=Date.now();render();
+    });
+    conn.on('close',()=>{if(role==='guest'){setStatus('ホストとの接続が切れました',false)}});
+  });
+  p.on('error',e=>{
+    if(e.type==='peer-unavailable'){clearTimeout(timer);entryErr('部屋が見つかりませんでした。コードを確認してね。');try{p.destroy()}catch(_){}setStatus('未接続',false);return}
+    if(!opened){clearTimeout(timer);entryErr('接続できませんでした。もう一度ためしてね。');try{p.destroy()}catch(_){}setStatus('未接続',false)}
+  });
+}
+
+/* ---------- 画面 ---------- */
+const curState=()=>role==='host'?hs:role==='guest'?gSt:null;
+const curPlayers=()=>role==='host'?players:gPlayers;
+function remainMs(st){
+  if(!st||st.phase!=='play')return 0;
+  if(role==='host')return Math.max(0,hs.deadline-Date.now());
+  return Math.max(0,(st.remain||0)-(Date.now()-gRecv));
+}
+function plItems(st,pl){
+  return st.order.map((id,i)=>{
+    const here=pl.some(p=>p.id===id);
+    const cls=[st.phase==='play'&&i===st.cur?'cur':'',st.alive[i]?'':'out'].join(' ');
+    return `<li class="${cls}">${esc(st.names[i])}${id===myId?'<span class="tag">あなた</span>':''}${here?'':'<span class="tag">退出</span>'}<span class="sc">${st.score[i]}語</span></li>`;
+  }).join('');
+}
+function histItems(st){
+  const h=(st.hist||[]).slice().reverse();
+  return h.length?h.map(x=>`<li><b>${esc(x.w)}</b><span>${esc(st.names[x.p])}</span></li>`).join(''):'<li class="empty">まだありません</li>';
+}
+function render(){
+  const st=curState(),pl=curPlayers();
+  const view=!role?'entry':(!st||st.phase==='lobby')?'lobby':st.phase==='play'?'play':'over';
+  $('#vEntry').hidden=view!=='entry';$('#vLobby').hidden=view!=='lobby';$('#vPlay').hidden=view!=='play';$('#vOver').hidden=view!=='over';
+  const amHost=role==='host';
+  if(view==='lobby'){
+    $('#codeShow').textContent=code;
+    $('#plist').innerHTML=pl.map((p,i)=>`<li>${esc(p.nick)}${p.id==='host'?'<span class="tag">ホスト</span>':''}${p.id===myId?'<span class="tag">あなた</span>':''}</li>`).join('')||'<li class="empty">読み込み中…</li>';
+    $('#hostCtl').hidden=!amHost;
+    $('#waitHost').textContent=amHost?(pl.length<2?'ひとりでスタートすると練習モード(何語つなげるか)になります。ホストがこのページを閉じると部屋がなくなるので注意。':'ホストがこのページを閉じると部屋がなくなるので注意。'):'ホストがスタートするのを待っています…';
+  }
+  if(view==='play'){
+    const head=$('#pHead'),len=$('#pLen');
+    if(lastT!==st.t){
+      lastT=st.t;$('#w').value='';
+      head.classList.remove('pop');len.parentNode.classList.remove('pop');void head.offsetWidth;
+      head.classList.add('pop');len.parentNode.classList.add('pop');
+    }
+    head.textContent=st.head;len.textContent=lenLabel(st.len);
+    const me=st.order.indexOf(myId),mine=st.order[st.cur]===myId;
+    const tm=$('#turnMsg');tm.classList.toggle('mine',mine);
+    tm.textContent=mine?'あなたの番!':me<0?`観戦中:${st.names[st.cur]} の番`:`${st.names[st.cur]} の番`;
+    $('#w').disabled=!mine;$('#send').disabled=!mine;
+    if(mine&&document.activeElement!==$('#w'))try{$('#w').focus({preventScroll:true})}catch(e){}
+    const note=$('#note');note.hidden=!st.note;note.textContent=st.note||'';
+    $('#err').textContent=st.err&&st.err.p===myId&&st.err.n===subN?'× '+st.err.m:'';
+    $('#pl2').innerHTML=plItems(st,pl);$('#hist').innerHTML=histItems(st);
+    updCount();
+  }
+  if(view==='over'){
+    lastT=null;
+    const solo=st.order.length===1;
+    $('#winner').textContent=solo?`${st.score[0]}語つなげました`:st.win>=0?`${st.names[st.win]} の勝ち!`:'引き分け';
+    $('#overNote').textContent=st.note||'';
+    $('#pl3').innerHTML=plItems(st,pl);$('#hist2').innerHTML=histItems(st);
+    $('#overHost').hidden=!amHost;$('#overWait').textContent=amHost?'':'ホストが次のゲームを始めるのを待っています…';
+  }
+}
+function updCount(){
+  const st=curState();if(!st||st.phase!=='play')return;
+  const w=norm($('#w').value);const c=$('#cnt');
+  c.textContent=w?`${w.length}文字 / お題 ${lenLabel(st.len)}文字`:'';
+  c.classList.toggle('ok',!!w&&okLen(w,st.len)&&w[0]===st.head);
+}
+function tickUI(){
+  const st=curState();if(!st||st.phase!=='play')return;
+  const r=remainMs(st),tot=(st.limit||15)*1000;
+  const bar=$('#bar');bar.style.width=Math.min(100,r/tot*100)+'%';bar.classList.toggle('low',r<4000);
+  $('#sec').textContent=(r/1000).toFixed(1)+'秒';
+}
+
+/* ---------- 操作 ---------- */
+function entryErr(t){$('#entryMsg').textContent=t}
+function getNick(){
+  const n=$('#nick').value.trim().slice(0,12);
+  if(!n){entryErr('ニックネームを入れてね');$('#nick').focus();return null}
+  try{localStorage.setItem('gs-nick',n)}catch(e){}
+  return n;
+}
+function needPeer(){if(typeof Peer==='undefined'){entryErr('通信の部品を読み込めませんでした。ページを再読み込みしてね。');return false}return true}
+$('#mk').addEventListener('click',()=>{const n=getNick();if(!n||!needPeer())return;entryErr('');createRoom(n)});
+$('#jn').addEventListener('click',()=>{
+  const n=getNick();if(!n||!needPeer())return;
+  const c=$('#codeIn').value.replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0)).replace(/[^0-9]/g,'');
+  if(c.length!==4){entryErr('4けたの部屋コードを入れてね');return}
+  entryErr('');joinRoom(c,n);
+});
+function leave(){
+  try{peer&&peer.destroy()}catch(e){}
+  peer=null;role=null;code=null;hs=null;players=[];conns=new Map();gConn=null;gSt=null;gPlayers=[];lastT=null;
+  setStatus('未接続',false);render();
+}
+$('#leave1').addEventListener('click',leave);$('#leave2').addEventListener('click',leave);
+$('#start').addEventListener('click',startGame);
+$('#again').addEventListener('click',startGame);
+$('#toLobby').addEventListener('click',()=>{if(role==='host'&&hs){hs.phase='lobby';hostBroadcast()}});
+$('#limit').addEventListener('change',()=>{if(role==='host'&&hs&&hs.phase==='lobby'){hs.limit=+$('#limit').value;hostBroadcast()}});
+$('#copyCode').addEventListener('click',()=>{
+  const url=location.href.split('#')[0]+'#'+code;
+  const txt=`限界しりとりやろう!\n部屋コード:${code}\n${url}`;
+  try{navigator.clipboard.writeText(txt).then(()=>{$('#copyCode').textContent='コピーしました'},()=>{})}catch(e){}
+});
+$('#w').addEventListener('input',updCount);
+$('#f').addEventListener('submit',e=>{
+  e.preventDefault();
+  const v=$('#w').value;if(!v.trim())return;
+  const st=curState();if(!st||st.phase!=='play'||st.order[st.cur]!==myId)return;
+  subN++;const sub={type:'sub',g:st.g,t:st.t,n:subN,w:v.slice(0,40)};
+  if(role==='host')judge('host',sub);else if(gConn&&gConn.open)gConn.send(sub);
+});
+window.addEventListener('beforeunload',()=>{try{peer&&peer.destroy()}catch(e){}});
+setInterval(hostTick,200);
+setInterval(tickUI,100);
+render();
+}
+</script>
+</body>
+</html>
