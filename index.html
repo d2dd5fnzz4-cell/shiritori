@@ -85,6 +85,7 @@ input:focus,select:focus,.btn:focus-visible{outline:3px solid var(--yel);outline
 .hist li span{color:var(--sub);font-size:13px;white-space:nowrap;align-self:center}
 .hist li:first-child{outline:2px solid var(--yel)}
 .btn.rej{width:100%;margin:0 0 10px;border-color:var(--red);color:var(--redd)}
+.plist li .hcb{margin-left:auto}.plist li .hcb.on{background:var(--yel);border-color:#161313;color:#161313}.tag.hct{background:var(--yel)!important;color:#161313!important}
 .empty{color:var(--sub);font-size:14px}
 .winner{font:400 clamp(34px,8vw,56px)/1.1 "Dela Gothic One",sans-serif;margin:8px 0 6px;color:var(--redd);text-wrap:balance}
 .foot{max-width:1100px;margin:0 auto;padding:8px max(5vw,16px) 40px;color:var(--sub);font-size:13px}
@@ -112,6 +113,7 @@ input:focus,select:focus,.btn:focus-visible{outline:3px solid var(--yel);outline
       <li>ひらがな・カタカナで入力。のばし棒「ー」や小さい字も1文字に数えます。</li>
       <li>最後が「ー」なら、その前の字でつなぎます。小さい字は大きく(「ゃ」なら「や」)。</li>
       <li>「ん」で終わる、時間切れ、はアウト。同じ言葉は使えません。</li>
+      <li>ホストはロビーで参加者に「ハンデ」をつけられます。ハンデの人には9〜11文字ちょうどのお題も出て、大きい数字が出やすくなります。</li>
       <li>ないでしょ、という言葉はホストが「却下」できます。却下されたら言った人は失格です。</li>
     </ul>
   </div>
@@ -183,16 +185,26 @@ const HEADS='あいうえおかきくけこさしすせそたちつてとなに�
 const BIG={'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お','っ':'つ','ゃ':'や','ゅ':'ゆ','ょ':'よ','ゎ':'わ','ゕ':'か','ゖ':'け','を':'お','ぢ':'じ','づ':'ず','ゔ':'ぶ'};
 const norm=s=>String(s).trim().replace(/[\s　]/g,'').replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/[-‐－−ｰ〜～—]/g,'ー');
 const tailOf=w=>{const t=w.replace(/ー+$/,'');if(!t)return '';const c=t[t.length-1];return BIG[c]||c};
-const pickLen=k=>{const lo=Math.min(2+Math.floor((k||0)/5),8);return Math.min(lo+Math.floor(Math.random()*3),8)};
+/* お題の文字数:数字はちょうどその文字数、PLUS(108)は「8+」=8文字以上 */
+const PLUS=108;
+const pickLen=(k,hc)=>{
+  const lo=Math.min(2+Math.floor((k||0)/5),8);
+  if(!hc){const v=lo+Math.floor(Math.random()*3);return v>=8?PLUS:v}
+  /* ハンデ:いまの最小〜11文字ちょうどまで、大きい数ほど出やすい(重み1,2,3…) */
+  const vals=[];for(let v=lo;v<=11;v++)vals.push(v);
+  let r=Math.random()*vals.reduce((x,_,i)=>x+i+1,0);
+  for(let i=0;i<vals.length;i++){if((r-=i+1)<0)return vals[i]}
+  return 11;
+};
+const lenLabel=l=>l>=100?(l-100)+'+':String(l);
+const okLen=(w,l)=>l>=100?w.length>=l-100:w.length===l;
 const wordsSoFar=()=>hs.score.reduce((a,b)=>a+b,0);
-const lenLabel=l=>l>=8?'8+':String(l);
-const okLen=(w,l)=>l>=8?w.length>=8:w.length===l;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 
 let peer=null,role=null,code=null,myId=null,status='',subN=0,lastT=null;
 /* host */
-let hs=null,players=[],conns=new Map(),hostUsed=new Set(),lastPub=0;
+let hcSet={},hs=null,players=[],conns=new Map(),hostUsed=new Set(),lastPub=0;
 /* guest */
 let gConn=null,gSt=null,gPlayers=[],gRecv=0;
 
@@ -207,14 +219,14 @@ function hostBroadcast(){
   lastPub=Date.now();
   const s={...hs};delete s.deadline;
   if(hs.phase==='play')s.remain=Math.max(0,hs.deadline-Date.now());
-  const pl=players.map(p=>({id:p.id,nick:p.nick}));
+  const pl=players.map(p=>({id:p.id,nick:p.nick,hc:hcSet[p.id]?1:0}));
   for(const[id,c]of conns){if(c.open){try{c.send({type:'st',st:s,players:pl,you:id})}catch(e){}}}
   render();
 }
 function nextTurn(){
   const n=hs.order.length;let i=hs.cur;
   for(let k=0;k<n;k++){i=(i+1)%n;if(hs.alive[i])break}
-  hs.cur=i;hs.t++;hs.len=pickLen(wordsSoFar());hs.deadline=Date.now()+hs.limit*1000;
+  hs.cur=i;hs.t++;hs.len=pickLen(wordsSoFar(),hs.hc&&hs.hc[hs.cur]);hs.deadline=Date.now()+hs.limit*1000;
 }
 function eliminate(reason,newHead){
   hs.alive[hs.cur]=0;hs.err=null;
@@ -247,9 +259,19 @@ function rejectLast(){
   const v=hs.prev;
   hostUsed.delete(v.w);
   const i=hs.hist.map(x=>x.w).lastIndexOf(v.w);if(i>=0)hs.hist.splice(i,1);
-  hs.alive=v.alive;hs.score=v.score;hs.head=v.head;hs.len=v.len;hs.cur=v.p;
-  hs.phase='play';hs.win=-1;hs.err=null;hs.prev=null;
-  eliminate(`「${v.w}」をホストが却下`);
+  hs.prev=null;
+  if(hs.phase==='play'){
+    /* 次の人が答えている途中:お題(頭の文字・文字数)はそのまま、言った人だけ失格 */
+    hs.score[v.p]=Math.max(0,hs.score[v.p]-1);hs.alive[v.p]=0;
+    hs.note=`${hs.names[v.p]} アウト!(「${v.w}」をホストが却下)`;
+    if(hs.alive.filter(Boolean).length<=1){hs.phase='over';hs.t++;hs.win=hs.order.length>1?hs.alive.indexOf(1):-1}
+    else hs.deadline=Date.now()+hs.limit*1000;
+  }else{
+    /* もう決着していたとき:その言葉の前に戻して、言った人を失格に */
+    hs.alive=v.alive;hs.score=v.score;hs.head=v.head;hs.len=v.len;hs.cur=v.p;
+    hs.phase='play';hs.win=-1;hs.err=null;
+    eliminate(`「${v.w}」をホストが却下`);
+  }
   hostBroadcast();
 }
 function startGame(){
@@ -257,7 +279,9 @@ function startGame(){
   const limit=+$('#limit').value||15;
   hs={phase:'play',g:(hs&&hs.g||0)+1,limit,order:players.map(p=>p.id),names:players.map(p=>p.nick),
       alive:players.map(()=>1),score:players.map(()=>0),cur:Math.floor(Math.random()*players.length),t:1,
-      head:rnd(HEADS),len:pickLen(0),hist:[],note:null,err:null,win:-1,prev:null,deadline:Date.now()+limit*1000+2000};
+      hc:players.map(p=>hcSet[p.id]?1:0),
+      head:rnd(HEADS),len:0,hist:[],note:null,err:null,win:-1,prev:null,deadline:Date.now()+limit*1000+2000};
+  hs.len=pickLen(0,hs.hc[hs.cur]);
   hostUsed=new Set();hostBroadcast();
 }
 function hostTick(){
@@ -295,7 +319,7 @@ function createRoom(nick,tries=0){
         hostBroadcast();
       }else if(d.type==='sub'){judge(conn.peer,d)}
     });
-    const drop=()=>{conns.delete(conn.peer);players=players.filter(x=>x.id!==conn.peer);if(hs&&hs.phase!=='play')hostBroadcast();else render()};
+    const drop=()=>{conns.delete(conn.peer);players=players.filter(x=>x.id!==conn.peer);delete hcSet[conn.peer];if(hs&&hs.phase!=='play')hostBroadcast();else render()};
     conn.on('close',drop);conn.on('error',drop);
   });
 }
@@ -337,7 +361,7 @@ function plItems(st,pl){
   return st.order.map((id,i)=>{
     const here=pl.some(p=>p.id===id);
     const cls=[st.phase==='play'&&i===st.cur?'cur':'',st.alive[i]?'':'out'].join(' ');
-    return `<li class="${cls}">${esc(st.names[i])}${id===myId?'<span class="tag">あなた</span>':''}${here?'':'<span class="tag">退出</span>'}<span class="sc">${st.score[i]}語</span></li>`;
+    return `<li class="${cls}">${esc(st.names[i])}${id===myId?'<span class="tag">あなた</span>':''}${st.hc&&st.hc[i]?'<span class="tag hct">ハンデ</span>':''}${here?'':'<span class="tag">退出</span>'}<span class="sc">${st.score[i]}語</span></li>`;
   }).join('');
 }
 function histItems(st){
@@ -351,7 +375,7 @@ function render(){
   const amHost=role==='host';
   if(view==='lobby'){
     $('#codeShow').textContent=code;
-    $('#plist').innerHTML=pl.map((p,i)=>`<li>${esc(p.nick)}${p.id==='host'?'<span class="tag">ホスト</span>':''}${p.id===myId?'<span class="tag">あなた</span>':''}</li>`).join('')||'<li class="empty">読み込み中…</li>';
+    $('#plist').innerHTML=pl.map(p=>`<li>${esc(p.nick)}${p.id==='host'?'<span class="tag">ホスト</span>':''}${p.id===myId?'<span class="tag">あなた</span>':''}${amHost?`<button class="btn small hcb${p.hc?' on':''}" type="button" data-id="${esc(p.id)}">ハンデ${p.hc?'あり':'なし'}</button>`:(p.hc?'<span class="tag hct">ハンデ</span>':'')}</li>`).join('')||'<li class="empty">読み込み中…</li>';
     $('#hostCtl').hidden=!amHost;
     $('#waitHost').textContent=amHost?(pl.length<2?'ひとりでスタートすると練習モード(何語つなげるか)になります。ホストがこのページを閉じると部屋がなくなるので注意。':'ホストがこのページを閉じると部屋がなくなるので注意。'):'ホストがスタートするのを待っています…';
   }
@@ -418,12 +442,16 @@ $('#jn').addEventListener('click',()=>{
 });
 function leave(){
   try{peer&&peer.destroy()}catch(e){}
-  peer=null;role=null;code=null;hs=null;players=[];conns=new Map();gConn=null;gSt=null;gPlayers=[];lastT=null;
+  peer=null;role=null;code=null;hs=null;hcSet={};players=[];conns=new Map();gConn=null;gSt=null;gPlayers=[];lastT=null;
   setStatus('未接続',false);render();
 }
 $('#leave1').addEventListener('click',leave);$('#leave2').addEventListener('click',leave);
 $('#start').addEventListener('click',startGame);
 $('#again').addEventListener('click',startGame);
+$('#plist').addEventListener('click',e=>{
+  const b=e.target.closest('.hcb');if(!b||role!=='host')return;
+  const id=b.dataset.id;if(hcSet[id])delete hcSet[id];else hcSet[id]=1;hostBroadcast();
+});
 $('#rej').addEventListener('click',rejectLast);$('#rej2').addEventListener('click',rejectLast);
 $('#toLobby').addEventListener('click',()=>{if(role==='host'&&hs){hs.phase='lobby';hostBroadcast()}});
 $('#limit').addEventListener('change',()=>{if(role==='host'&&hs&&hs.phase==='lobby'){hs.limit=+$('#limit').value;hostBroadcast()}});
