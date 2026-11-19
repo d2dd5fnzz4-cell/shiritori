@@ -51,7 +51,6 @@ input:focus,select:focus,.btn:focus-visible{outline:3px solid var(--yel);outline
 .plist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .plist li{display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--line);border-radius:12px;font-weight:700}
 .plist li .tag{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--panel);color:var(--sub);font-weight:700}
-.plist li .sc{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--sub);white-space:nowrap}
 .plist li.cur{border-color:var(--red);background:color-mix(in srgb,var(--red) 10%,var(--bg))}
 .plist li.out{opacity:.45;text-decoration:line-through}
 .ctl{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-top:22px}
@@ -84,8 +83,28 @@ input:focus,select:focus,.btn:focus-visible{outline:3px solid var(--yel);outline
 .hist li b{font-size:18px;overflow-wrap:anywhere}
 .hist li span{color:var(--sub);font-size:13px;white-space:nowrap;align-self:center}
 .hist li:first-child{outline:2px solid var(--yel)}
-.btn.rej{width:100%;margin:0 0 10px;border-color:var(--red);color:var(--redd)}
-.plist li .hcb{margin-left:auto}.plist li .hcb.on{background:var(--yel);border-color:#161313;color:#161313}.tag.hct{background:var(--yel)!important;color:#161313!important}
+.tag.hct{background:var(--yel)!important;color:#161313!important}
+.plist li{flex-wrap:wrap}.plist li .nm{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.plist li .meta{margin-left:auto;display:flex;gap:10px;color:var(--sub);font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.plist li .lv{color:var(--red);letter-spacing:.05em}
+.plist li.lob{flex-direction:column;align-items:flex-start}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:14px;font-weight:700;min-height:40px;padding:6px 12px;border-radius:99px;border:2px solid var(--line);background:var(--bg);color:var(--sub);cursor:pointer}
+.chip.on{background:var(--yel);border-color:#161313;color:#161313}
+.chip:focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+.hist li{align-items:center}.hist li .xb{min-height:36px;padding:4px 12px;font-size:13px;border-color:var(--red);color:var(--redd);flex:none}
+.hist li.x b{text-decoration:line-through;opacity:.5}
+.timer i.res{background:#ff8a00}
+.head{position:relative}.head small{position:absolute;top:8px;left:0;right:0;text-align:center;font:900 14px/1 "Zen Kaku Gothic New",sans-serif;color:var(--red)}
+.btn:disabled{opacity:.45}
+.btn.resume{background:var(--yel);border-color:#161313;color:#161313}
+.btn.pass{width:100%;margin-top:8px;font-size:15px;border-color:var(--line)}
+.modebox{margin-top:22px}.modebox h2{margin-top:0}
+.badges{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.badge{font-weight:900;font-size:15px;padding:6px 12px;border-radius:99px;background:var(--panel);border:2px solid var(--line)}
+.badge.ban{border-color:var(--red);color:var(--redd)}.badge.daku{border-color:#ff8a00}.badge.rush{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.len b{font-size:clamp(34px,10vw,64px)}
+.plist li.done{border-color:#1f8f4e}.plist li .ok{color:#1f8f4e;font-weight:900}
 .empty{color:var(--sub);font-size:14px}
 .winner{font:400 clamp(34px,8vw,56px)/1.1 "Dela Gothic One",sans-serif;margin:8px 0 6px;color:var(--redd);text-wrap:balance}
 .foot{max-width:1100px;margin:0 auto;padding:8px max(5vw,16px) 40px;color:var(--sub);font-size:13px}
@@ -97,9 +116,10 @@ input:focus,select:focus,.btn:focus-visible{outline:3px solid var(--yel);outline
 <main>
 <section id="vEntry" class="band">
   <h1>ともだちと、限界しりとり。</h1>
-  <p class="lead">毎ターン「頭の文字」と「文字数」のお題が出ます。時間内に答えられなかったらアウト。最後まで残った人の勝ちです。</p>
+  <p class="lead">毎ターン「頭の文字」と「文字数」のお題が出ます。時間切れなどでライフが減り、なくなったら失格。最後まで残った人の勝ちです。</p>
   <div class="entry">
     <label for="nick">ニックネーム<input id="nick" maxlength="12" autocomplete="off" placeholder="例:きよ"></label>
+    <button id="resume" class="btn resume" type="button" hidden></button>
     <button id="mk" class="btn primary" type="button">部屋をつくる</button>
     <div class="or">または、友達の部屋に入る</div>
     <label for="codeIn">部屋コード<input id="codeIn" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="4けたの数字"></label>
@@ -109,12 +129,22 @@ input:focus,select:focus,.btn:focus-visible{outline:3px solid var(--yel);outline
   <div class="rules"><b>ルール</b>
     <ul>
       <li>お題が「す 6」なら、「す」から始まる6文字の言葉(例:すーつけーす)。「8+」は8文字以上。</li>
-      <li>最初は2〜4文字。5語出るごとにお題の文字数が1つずつ上がっていきます。</li>
-      <li>ひらがな・カタカナで入力。のばし棒「ー」や小さい字も1文字に数えます。</li>
-      <li>最後が「ー」なら、その前の字でつなぎます。小さい字は大きく(「ゃ」なら「や」)。</li>
-      <li>「ん」で終わる、時間切れ、はアウト。同じ言葉は使えません。</li>
-      <li>ホストはロビーで参加者に「ハンデ」をつけられます。ハンデの人には9〜11文字ちょうどのお題も出て、大きい数字が出やすくなります。</li>
-      <li>ないでしょ、という言葉はホストが「却下」できます。却下されたら言った人は失格です。</li>
+      <li>最初は2〜4文字。5語(早押しは5ラウンド)ごとにお題の文字数が上がっていきます。</li>
+      <li>ひらがな・カタカナで入力。のばし棒「ー」や小さい字も1文字に数えます。最後が「ー」ならその前の字でつなぎ、小さい字は大きく(「ゃ」なら「や」)。</li>
+      <li>「ん」で終わる、時間切れ、ホストの却下でライフが1つ減ります。0になったら失格。同じ言葉は使えません。</li>
+      <li>毎ターンの持ち時間を使い切ると予備時間が減り始めます(そのゲーム中は回復なし)。パスは1ゲーム1回。お題のひらがなを引き直せます。</li>
+    </ul>
+    <b>モード(ホストが選ぶ・組み合わせOK)</b>
+    <ul>
+      <li>早押し:順番なしで全員が同じお題に挑戦。1番は3点、2番は2点、3番以降も答えれば1点。ラウンド数が終わった時点で点数がいちばん多い人の勝ち。</li>
+      <li>禁止文字:毎回「この字が入ったらダメ」という字が出ます。</li>
+      <li>濁点必須:が・ぱ などの濁点・半濁点のついた字を1つ以上入れる。</li>
+      <li>文字数指定なし:何文字でもOK(2文字以上)。</li>
+    </ul>
+    <b>ハンデ(ホストが人ごとに選ぶ)</b>
+    <ul>
+      <li>文字数が多い(9〜11文字ちょうども出る。文字数指定なしモードでは6文字以上)、たまに2連続、2文字目指定。</li>
+      <li>ブラウザが落ちても、15分以内なら同じ端末で開き直すと「部屋にもどる」から戻れます。</li>
     </ul>
   </div>
 </section>
@@ -124,12 +154,26 @@ input:focus,select:focus,.btn:focus-visible{outline:3px solid var(--yel);outline
   <p class="hint">「招待文をコピー」でURLとコードをまとめてコピーできます。LINEなどで友達に送ってね。</p>
   <h2>参加者</h2>
   <ul id="plist" class="plist"></ul>
+  <div id="modeBox" class="modebox">
+    <h2>モード(組み合わせOK)</h2>
+    <div id="modeChips" class="chips"></div>
+  </div>
   <div id="hostCtl" class="ctl">
-    <label for="limit">1ターンの制限時間
-      <select id="limit"><option value="10">10秒</option><option value="15" selected>15秒</option><option value="20">20秒</option><option value="30">30秒</option></select>
+    <label for="limit"><span id="limitName">1ターンの持ち時間</span>
+      <select id="limit"><option value="5">5秒</option><option value="10">10秒</option><option value="15" selected>15秒</option><option value="20">20秒</option><option value="30">30秒</option><option value="45">45秒</option><option value="60">60秒</option><option value="90">90秒</option><option value="120">120秒</option></select>
+    </label>
+    <label for="reserve" id="reserveL">予備時間(1ゲーム)
+      <select id="reserve"><option value="0">なし</option><option value="15">15秒</option><option value="30" selected>30秒</option><option value="60">60秒</option><option value="90">90秒</option><option value="120">120秒</option><option value="180">180秒</option><option value="300">300秒</option></select>
+    </label>
+    <label for="lives" id="livesL">ライフ
+      <select id="lives"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="7">7</option><option value="10">10</option></select>
+    </label>
+    <label for="rounds" id="roundsL" hidden>ラウンド数
+      <select id="rounds"><option value="5">5</option><option value="10" selected>10</option><option value="15">15</option><option value="20">20</option><option value="30">30</option></select>
     </label>
     <button id="start" class="btn primary" type="button">スタート</button>
   </div>
+  <p id="settingsShow" class="hint"></p>
   <p id="waitHost" class="hint"></p>
   <p><button id="leave1" class="btn ghost" type="button">部屋を出る</button></p>
 </section>
@@ -138,7 +182,8 @@ input:focus,select:focus,.btn:focus-visible{outline:3px solid var(--yel);outline
   <div class="play">
     <div>
       <p id="note" class="note" hidden></p>
-      <div class="prompt"><div class="head" id="pHead"></div><div class="len"><b id="pLen"></b><span>文字</span></div></div>
+      <div class="prompt"><div class="head" id="pHead"><small id="pPos" hidden>2文字目</small><span id="pHeadC"></span></div><div class="len"><b id="pLen"></b><span id="pLenU">文字</span></div></div>
+      <div id="pBadges" class="badges" hidden></div>
       <div class="timer"><i id="bar"></i><span id="sec"></span></div>
       <p id="turnMsg" class="turn"></p>
       <form id="f" class="answer" autocomplete="off">
@@ -147,12 +192,13 @@ input:focus,select:focus,.btn:focus-visible{outline:3px solid var(--yel);outline
         <span id="cnt" class="cnt"></span>
       </form>
       <p id="err" class="err"></p>
+      <button id="pass" class="btn pass" type="button" hidden></button>
     </div>
     <div>
       <h2 style="margin-top:0">プレイヤー</h2>
       <ul id="pl2" class="plist"></ul>
       <h2>これまでの言葉</h2>
-      <button id="rej" class="btn rej" type="button" hidden></button>
+      <p id="xHint" class="hint" hidden>あやしい言葉は「アウト」で却下できます(言った人のライフ−1)。</p>
       <ol id="hist" class="hist"></ol>
     </div>
   </div>
@@ -169,7 +215,6 @@ input:focus,select:focus,.btn:focus-visible{outline:3px solid var(--yel);outline
   </div>
   <p id="overWait" class="hint"></p>
   <h2>出た言葉</h2>
-  <button id="rej2" class="btn rej" type="button" hidden></button>
   <ol id="hist2" class="hist"></ol>
   <p><button id="leave2" class="btn ghost" type="button">部屋を出る</button></p>
 </section>
@@ -183,26 +228,28 @@ const $=s=>document.querySelector(s);
 const PREFIX='genkai-shiritori-kiyo-';
 const HEADS='あいうえおかきくけこさしすせそたちつてとなにのはひふへほまみむめもやゆよらりれわ'.split('');
 const BIG={'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お','っ':'つ','ゃ':'や','ゅ':'ゆ','ょ':'よ','ゎ':'わ','ゕ':'か','ゖ':'け','を':'お','ぢ':'じ','づ':'ず','ゔ':'ぶ'};
+const HC=[['l','文字数が多い'],['d','たまに2連続'],['s','2文字目指定']];
+const DOUBLE_RATE=0.3;
 const norm=s=>String(s).trim().replace(/[\s　]/g,'').replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/[-‐－−ｰ〜～—]/g,'ー');
 const tailOf=w=>{const t=w.replace(/ー+$/,'');if(!t)return '';const c=t[t.length-1];return BIG[c]||c};
 /* お題の文字数:数字はちょうどその文字数、PLUS(108)は「8+」=8文字以上 */
 const PLUS=108;
-const pickLen=(k,hc)=>{
+const pickLen=(k,long)=>{
   const lo=Math.min(2+Math.floor((k||0)/5),8);
-  if(!hc){const v=lo+Math.floor(Math.random()*3);return v>=8?PLUS:v}
-  /* ハンデ:いまの最小〜11文字ちょうどまで、大きい数ほど出やすい(重み1,2,3…) */
+  if(!long){const v=lo+Math.floor(Math.random()*3);return v>=8?PLUS:v}
   const vals=[];for(let v=lo;v<=11;v++)vals.push(v);
   let r=Math.random()*vals.reduce((x,_,i)=>x+i+1,0);
   for(let i=0;i<vals.length;i++){if((r-=i+1)<0)return vals[i]}
   return 11;
 };
-const lenLabel=l=>l>=100?(l-100)+'+':String(l);
-const okLen=(w,l)=>l>=100?w.length>=l-100:w.length===l;
-const wordsSoFar=()=>hs.score.reduce((a,b)=>a+b,0);
+const lenLabel=l=>l===0?'自由':l>=100?(l-100)+'+':String(l);
+const okLen=(w,l)=>l===0?w.length>=2:l>=100?w.length>=l-100:w.length===l;
+const charOk=(c,h)=>!!c&&(c===h||BIG[c]===h);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const hearts=(n,max)=>'♥'.repeat(Math.max(0,n))+'♡'.repeat(Math.max(0,max-n));
 
-let peer=null,role=null,code=null,myId=null,status='',subN=0,lastT=null;
+let peer=null,role=null,code=null,myId=null,subN=0,lastT=null,busy=false;
 /* host */
 let hcSet={},hs=null,players=[],conns=new Map(),hostUsed=new Set(),lastPub=0;
 /* guest */
@@ -211,162 +258,369 @@ let gConn=null,gSt=null,gPlayers=[],gRecv=0;
 try{$('#nick').value=localStorage.getItem('gs-nick')||''}catch(e){}
 try{const m=location.hash.match(/^#(\d{4})$/);if(m)$('#codeIn').value=m[1]}catch(e){}
 
-function setStatus(t,ok){status=t;const c=$('#conn');c.textContent=t;c.classList.toggle('off',!ok)}
+function setStatus(t,ok){const c=$('#conn');c.textContent=t;c.classList.toggle('off',!ok)}
+function setBusy(b){busy=b;$('#mk').disabled=b;$('#jn').disabled=b}
 setStatus('未接続',false);
 
-/* ---------- ホスト ---------- */
+/* ---------- モード ---------- */
+const MODES=[['rush','早押し'],['ban','禁止文字'],['daku','濁点必須'],['free','文字数指定なし']];
+const BAN_CHARS='あいうえおかきくこさしすたつてとなにのはまもやよらりるれわん'.split('');
+const DAKU=/[がぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽゔ]/;
+let modeSet={};
+const bump=l=>l>=100?l+2:Math.min(l+2,12);
+/* その人に出ているお題 {pos:何文字目, len:文字数(0=自由)} */
+function reqOf(st,i){
+  const hc=(st.hc&&st.hc[i])||'';
+  if(st.mode&&st.mode.rush){
+    const long=hc.includes('l');
+    return {pos:hc.includes('s')?2:1,len:st.mode.free?(long?106:0):(long?bump(st.len):st.len)};
+  }
+  return {pos:st.pos||1,len:st.len};
+}
+const pickBan=head=>rnd(BAN_CHARS.filter(c=>c!==head));
+
+/* ---------- ホスト:進行 ---------- */
+const settings=()=>({limit:+$('#limit').value||15,reserve:+$('#reserve').value,lifeMax:+$('#lives').value||3,rounds:+$('#rounds').value||10,mode:{...modeSet}});
+const hcStr=id=>{const o=hcSet[id]||{};return HC.map(h=>o[h[0]]?h[0]:'').join('')};
+const hasHc=(i,k)=>!!(hs.hc[i]&&hs.hc[i].includes(k));
+const wordsSoFar=()=>hs.score.reduce((a,b)=>a+b,0);
+const isOnline=id=>id==='host'||players.some(p=>p.id===id&&p.online!==false);
+
 function hostBroadcast(){
   lastPub=Date.now();
-  const s={...hs};delete s.deadline;
-  if(hs.phase==='play')s.remain=Math.max(0,hs.deadline-Date.now());
-  const pl=players.map(p=>({id:p.id,nick:p.nick,hc:hcSet[p.id]?1:0}));
+  const s={...hs};delete s.turnEnd;
+  if(hs.phase==='play'){s.remain=hs.turnEnd-Date.now();}
+  const pl=players.map(p=>({id:p.id,nick:p.nick,hc:hcStr(p.id),on:p.online!==false?1:0}));
   for(const[id,c]of conns){if(c.open){try{c.send({type:'st',st:s,players:pl,you:id})}catch(e){}}}
-  render();
+  saveHost();render();
+}
+function check(w,i){
+  const {pos,len}=reqOf(hs,i);
+  if(!w)return '入力してね';
+  if(!/^[ぁ-ゖー]+$/.test(w))return 'ひらがな・カタカナだけで入力してね';
+  if(!charOk(w[pos-1],hs.head))return pos===2?`2文字目を「${hs.head}」にしてね`:`「${hs.head}」から始めてね`;
+  if(!okLen(w,len))return len===0?'2文字以上にしてね':`${lenLabel(len)}文字じゃないよ(いま${w.length}文字)`;
+  if(hs.mode.ban&&hs.ban&&[...w].some(c=>c===hs.ban||BIG[c]===hs.ban))return `禁止文字「${hs.ban}」が入ってるよ`;
+  if(hs.mode.daku&&!DAKU.test(w))return '濁点か半濁点(が・ぱ など)を1つ入れてね';
+  if(hostUsed.has(w))return 'その言葉はもう出たよ';
+  if(!tailOf(w))return 'その言葉は使えないよ';
+  if(hs.mode.rush&&w.replace(/ー+$/,'').endsWith('ん'))return '「ん」で終わる言葉はダメだよ';
+  return null;
+}
+function setErr(from,n,m){hs.errs=hs.errs||{};hs.errs[from]={n,m};hostBroadcast()}
+
+/* ----- 順番モード ----- */
+function commitReserve(){
+  if(hs.mode.rush)return;
+  const over=Date.now()-hs.turnEnd;
+  if(over>0)hs.res[hs.cur]=Math.max(0,hs.res[hs.cur]-over);
+}
+function startTurn(){
+  hs.t++;hs.errs={};
+  hs.pos=hasHc(hs.cur,'s')?2:1;
+  const long=hasHc(hs.cur,'l');
+  hs.len=hs.mode.free?(long?106:0):pickLen(wordsSoFar(),long);
+  hs.ban=hs.mode.ban?pickBan(hs.head):null;
+  hs.turnEnd=Date.now()+hs.limit*1000;
 }
 function nextTurn(){
   const n=hs.order.length;let i=hs.cur;
   for(let k=0;k<n;k++){i=(i+1)%n;if(hs.alive[i])break}
-  hs.cur=i;hs.t++;hs.len=pickLen(wordsSoFar(),hs.hc&&hs.hc[hs.cur]);hs.deadline=Date.now()+hs.limit*1000;
+  hs.cur=i;startTurn();
 }
-function eliminate(reason,newHead){
-  hs.alive[hs.cur]=0;hs.err=null;
-  hs.note=`${hs.names[hs.cur]} アウト!(${reason})`;
-  if(newHead)hs.head=newHead;
+function checkOver(){
   const alive=hs.alive.filter(Boolean).length;
-  if(hs.order.length===1||alive<=1){hs.phase='over';hs.t++;hs.win=hs.order.length>1?hs.alive.indexOf(1):-1;return}
-  nextTurn();
+  if(hs.order.length===1?alive===0:alive<=1){
+    hs.phase='over';hs.t++;hs.win=hs.order.length>1?hs.alive.indexOf(1):-1;hs.winners=hs.win>=0?[hs.win]:[];return true;
+  }
+  return false;
 }
-function judge(from,sub){
-  if(hs.phase!=='play'||hs.order[hs.cur]!==from||sub.t!==hs.t||sub.g!==hs.g)return;
+function loseLife(i,reason,all){
+  hs.lives[i]=all?0:Math.max(0,hs.lives[i]-1);
+  if(hs.lives[i]===0){hs.alive[i]=0;hs.note=`${hs.names[i]} 失格!(${reason})`}
+  else hs.note=`${hs.names[i]} ライフ−1(${reason})のこり${hs.lives[i]}`;
+}
+function judgeTurn(from,sub){
+  if(hs.order[hs.cur]!==from)return;
   const w=norm(sub.w||'').slice(0,30);
-  const err=m=>{hs.err={p:from,n:sub.n,m};hostBroadcast()};
-  if(!w)return err('入力してね');
-  if(!/^[ぁ-ゖー]+$/.test(w))return err('ひらがな・カタカナだけで入力してね');
-  if(w[0]!==hs.head)return err(`「${hs.head}」から始めてね`);
-  if(!okLen(w,hs.len))return err(`${lenLabel(hs.len)}文字じゃないよ(いま${w.length}文字)`);
-  if(hostUsed.has(w))return err('その言葉はもう出たよ');
-  if(!tailOf(w))return err('その言葉は使えないよ');
-  hs.prev={w,p:hs.cur,head:hs.head,len:hs.len,alive:hs.alive.slice(),score:hs.score.slice()};
+  const e=check(w,hs.cur);if(e)return setErr(from,sub.n,e);
+  commitReserve();
   hostUsed.add(w);
-  hs.hist.push({w,p:hs.cur});if(hs.hist.length>60)hs.hist.shift();
-  hs.score[hs.cur]++;hs.err=null;hs.note=null;
-  if(w.replace(/ー+$/,'').endsWith('ん'))eliminate(`「${w}」が「ん」で終わった`,rnd(HEADS));
-  else{hs.head=tailOf(w);nextTurn()}
+  hs.hist.push({w,p:hs.cur,x:0});if(hs.hist.length>60)hs.hist.shift();
+  hs.score[hs.cur]++;hs.note=null;
+  if(w.replace(/ー+$/,'').endsWith('ん')){
+    loseLife(hs.cur,`「${w}」が「ん」で終わった`);hs.head=rnd(HEADS);
+    if(!checkOver())nextTurn();
+  }else{
+    hs.head=tailOf(w);
+    if(hasHc(hs.cur,'d')&&Math.random()<DOUBLE_RATE){hs.note=`ハンデ発動!${hs.names[hs.cur]} はもう1回`;startTurn()}
+    else nextTurn();
+  }
   hostBroadcast();
 }
-function rejectLast(){
-  if(role!=='host'||!hs||!hs.prev)return;
-  const v=hs.prev;
-  hostUsed.delete(v.w);
-  const i=hs.hist.map(x=>x.w).lastIndexOf(v.w);if(i>=0)hs.hist.splice(i,1);
-  hs.prev=null;
-  if(hs.phase==='play'){
-    /* 次の人が答えている途中:お題(頭の文字・文字数)はそのまま、言った人だけ失格 */
-    hs.score[v.p]=Math.max(0,hs.score[v.p]-1);hs.alive[v.p]=0;
-    hs.note=`${hs.names[v.p]} アウト!(「${v.w}」をホストが却下)`;
-    if(hs.alive.filter(Boolean).length<=1){hs.phase='over';hs.t++;hs.win=hs.order.length>1?hs.alive.indexOf(1):-1}
-    else hs.deadline=Date.now()+hs.limit*1000;
-  }else{
-    /* もう決着していたとき:その言葉の前に戻して、言った人を失格に */
-    hs.alive=v.alive;hs.score=v.score;hs.head=v.head;hs.len=v.len;hs.cur=v.p;
-    hs.phase='play';hs.win=-1;hs.err=null;
-    eliminate(`「${v.w}」をホストが却下`);
+
+/* ----- 早押しモード ----- */
+const RUSH_PTS=[3,2];
+function startRound(){
+  hs.round++;hs.t++;hs.errs={};
+  hs.ans=hs.order.map(()=>null);hs.first=null;
+  hs.pos=1;hs.len=hs.mode.free?0:pickLen(hs.round-1,false);
+  hs.ban=hs.mode.ban?pickBan(hs.head):null;
+  hs.turnEnd=Date.now()+hs.limit*1000;
+}
+function endRound(){
+  const r=hs.round;
+  if(hs.first){
+    const i=hs.ans.findIndex(a=>a&&a.w===hs.first);
+    hs.note=`ラウンド${r}:1位 ${hs.names[i]}「${hs.first}」`;
+    hs.head=tailOf(hs.first);
+  }else hs.note=`ラウンド${r}:だれも答えられませんでした`;
+  if(hs.round>=hs.rounds||!hs.alive.some(Boolean)){finishRush();return}
+  startRound();hs.turnEnd+=1500;
+}
+function finishRush(){
+  hs.phase='over';hs.t++;
+  const max=Math.max(...hs.pts.map((p,i)=>hs.alive[i]||hs.order.length===1?p:-1));
+  hs.winners=hs.pts.map((p,i)=>p===max&&(hs.alive[i]||hs.order.length===1)?i:-1).filter(i=>i>=0);
+  hs.win=hs.winners.length===1?hs.winners[0]:-1;
+}
+function judgeRush(from,sub){
+  const i=hs.order.indexOf(from);
+  if(i<0||!hs.alive[i]||hs.ans[i])return;
+  const w=norm(sub.w||'').slice(0,30);
+  const e=check(w,i);if(e)return setErr(from,sub.n,e);
+  hostUsed.add(w);
+  const rank=hs.ans.filter(Boolean).length+1;
+  const pts=RUSH_PTS[rank-1]||1;
+  hs.ans[i]={w,rank,pts};hs.pts[i]+=pts;hs.score[i]++;
+  if(rank===1)hs.first=w;
+  hs.hist.push({w,p:i,x:0,pts});if(hs.hist.length>60)hs.hist.shift();
+  const waiting=hs.order.some((id,k)=>hs.alive[k]&&!hs.ans[k]&&isOnline(id));
+  if(!waiting)endRound();
+  hostBroadcast();
+}
+
+/* ----- 共通 ----- */
+function judge(from,sub){
+  if(!hs||hs.phase!=='play'||sub.t!==hs.t||sub.g!==hs.g)return;
+  if(hs.mode.rush)judgeRush(from,sub);else judgeTurn(from,sub);
+}
+function usePass(from,d){
+  if(!hs||hs.phase!=='play'||hs.mode.rush||hs.order[hs.cur]!==from||d.t!==hs.t||d.g!==hs.g)return;
+  if(!(hs.pass&&hs.pass[hs.cur]>0))return;
+  hs.pass[hs.cur]--;
+  const old=hs.head;hs.head=rnd(HEADS.filter(h=>h!==old));
+  if(hs.ban===hs.head)hs.ban=pickBan(hs.head);
+  commitReserve();hs.turnEnd=Date.now()+hs.limit*1000;
+  hs.t++;hs.errs={};
+  hs.note=`${hs.names[hs.cur]} がパス!「${old}」から「${hs.head}」に変更`;
+  hostBroadcast();
+}
+function rejectWord(idx){
+  if(role!=='host'||!hs||hs.phase!=='play')return;
+  const e=hs.hist[idx];if(!e||e.x)return;
+  e.x=1;hostUsed.delete(e.w);
+  hs.score[e.p]=Math.max(0,hs.score[e.p]-1);
+  if(hs.mode.rush){
+    hs.pts[e.p]-=e.pts||0;
+    hs.note=`ホストが「${e.w}」を却下(${hs.names[e.p]} −${e.pts||0}点)`;
+    const a=hs.ans[e.p];
+    if(a&&a.w===e.w){
+      hs.ans[e.p]=null;
+      if(hs.first===e.w){const nx=hs.ans.filter(Boolean).sort((x,y)=>x.rank-y.rank)[0];hs.first=nx?nx.w:null}
+    }
+    hostBroadcast();return;
+  }
+  if(hs.alive[e.p])loseLife(e.p,`「${e.w}」をホストが却下`);
+  if(!checkOver()){
+    if(!hs.alive[hs.cur]){commitReserve();nextTurn()}
+    else{commitReserve();hs.turnEnd=Date.now()+hs.limit*1000}
   }
   hostBroadcast();
 }
 function startGame(){
-  if(role!=='host'||!players.length)return;
-  const limit=+$('#limit').value||15;
-  hs={phase:'play',g:(hs&&hs.g||0)+1,limit,order:players.map(p=>p.id),names:players.map(p=>p.nick),
-      alive:players.map(()=>1),score:players.map(()=>0),cur:Math.floor(Math.random()*players.length),t:1,
-      hc:players.map(p=>hcSet[p.id]?1:0),
-      head:rnd(HEADS),len:0,hist:[],note:null,err:null,win:-1,prev:null,deadline:Date.now()+limit*1000+2000};
-  hs.len=pickLen(0,hs.hc[hs.cur]);
-  hostUsed=new Set();hostBroadcast();
+  if(role!=='host'||!players.length||(hs&&hs.phase==='play'))return;
+  players=players.filter(p=>p.online!==false);
+  const S=settings();
+  hs={phase:'play',g:(hs&&hs.g||0)+1,...S,order:players.map(p=>p.id),names:players.map(p=>p.nick),
+      alive:players.map(()=>1),score:players.map(()=>0),pts:players.map(()=>0),lives:players.map(()=>S.lifeMax),
+      res:players.map(()=>S.reserve*1000),pass:players.map(()=>1),hc:players.map(p=>hcStr(p.id)),
+      cur:Math.floor(Math.random()*players.length),t:0,round:0,ans:[],first:null,
+      head:rnd(HEADS),hist:[],note:null,errs:{},win:-1,winners:[]};
+  hostUsed=new Set();
+  if(S.mode.rush)startRound();else startTurn();
+  hs.turnEnd+=2000;hostBroadcast();
 }
 function hostTick(){
-  if(role!=='host'||!hs)return;
-  if(hs.phase==='play'){
-    const P=hs.order[hs.cur];
-    if(!players.some(p=>p.id===P)){eliminate('部屋から抜けた');hostBroadcast();return}
-    if(Date.now()>=hs.deadline){eliminate('時間切れ');hostBroadcast();return}
-    if(Date.now()-lastPub>1000)hostBroadcast();
+  if(role!=='host'||!hs||hs.phase!=='play')return;
+  if(hs.mode.rush){
+    if(Date.now()>=hs.turnEnd){endRound();hostBroadcast();return}
+  }else if(Date.now()>=hs.turnEnd+hs.res[hs.cur]){
+    hs.res[hs.cur]=0;loseLife(hs.cur,'時間切れ');
+    if(!checkOver())nextTurn();hostBroadcast();return;
   }
+  if(Date.now()-lastPub>1000)hostBroadcast();
 }
-function createRoom(nick,tries=0){
-  const c=String(Math.floor(1000+Math.random()*9000));
-  setStatus('部屋をつくっています…',false);
+function lobbySettingsChanged(){
+  if(role==='host'&&hs&&hs.phase!=='play'){Object.assign(hs,settings());hostBroadcast()}
+}
+
+/* ---------- 保存(落ちても戻れるように) ---------- */
+const store={get(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+let myToken=(store.get('gs-token'))||('t'+Math.random().toString(36).slice(2,10)+Date.now().toString(36));
+store.set('gs-token',myToken);
+const FRESH=15*60*1000;
+function saveHost(){if(role==='host'&&hs)store.set('gs-host',{code,savedAt:Date.now(),hs,players:players.map(p=>({id:p.id,nick:p.nick})),hcSet,used:[...hostUsed]})}
+
+/* ---------- 接続:ホスト ---------- */
+function createRoom(nick,tries=0,restore=null){
+  const c=restore?restore.code:String(Math.floor(1000+Math.random()*9000));
+  setStatus(restore?`部屋 ${c} を復活中…`:'部屋をつくっています…',false);
   const p=new Peer(PREFIX+c);
   p.on('open',()=>{
-    peer=p;role='host';code=c;myId='host';
-    players=[{id:'host',nick}];hs={phase:'lobby',g:0,limit:+$('#limit').value||15};
+    if(role){try{p.destroy()}catch(_){}return}
+    peer=p;role='host';code=c;myId='host';setBusy(false);entryErr('');
+    if(restore){
+      hs=restore.hs;hs.mode=hs.mode||{};hs.errs=hs.errs||{};modeSet={...hs.mode};for(const k of ['limit','reserve','rounds'])if(hs[k]!=null)$('#'+k).value=String(hs[k]);if(hs.lifeMax)$('#lives').value=String(hs.lifeMax);hcSet=restore.hcSet||{};hostUsed=new Set(restore.used||[]);
+      players=(restore.players||[]).map(x=>({id:x.id,nick:x.id==='host'?nick:x.nick,online:x.id==='host'}));
+      if(hs.phase!=='play')players=players.filter(x=>x.id==='host');
+      if(hs.phase==='play'){hs.turnEnd=Date.now()+hs.limit*1000;hs.note='ホストが復帰しました'}
+    }else{players=[{id:'host',nick,online:true}];hcSet={};hostUsed=new Set();hs={phase:'lobby',g:0,...settings()}}
     setStatus('部屋オープン中',true);hostBroadcast();
   });
   p.on('error',e=>{
-    if(e.type==='unavailable-id'&&tries<5){try{p.destroy()}catch(_){}createRoom(nick,tries+1);return}
-    if(!role){entryErr('部屋をつくれませんでした。通信環境を確認して、もう一度ためしてね。');try{p.destroy()}catch(_){}}
+    if(!role&&e.type==='unavailable-id'){
+      try{p.destroy()}catch(_){}
+      if(restore&&tries<20){entryErr(`前の部屋がまだ残っているので、空くのを待っています…(${tries+1}/20)`);setTimeout(()=>{if(!role)createRoom(nick,tries+1,restore)},3000);return}
+      if(!restore&&tries<5){createRoom(nick,tries+1);return}
+    }
+    if(!role){entryErr(restore?'部屋を復活できませんでした。新しく部屋をつくってね。':'部屋をつくれませんでした。通信環境を確認して、もう一度ためしてね。');try{p.destroy()}catch(_){}setBusy(false);setStatus('未接続',false)}
     else setStatus('通信エラー',false);
   });
-  p.on('disconnected',()=>{if(role==='host'){setStatus('再接続中…',false);try{p.reconnect()}catch(_){}}});
+  p.on('disconnected',()=>{if(role==='host'&&peer===p){setStatus('再接続中…',false);try{p.reconnect()}catch(_){}}});
   p.on('connection',conn=>{
+    let tok=null;
     conn.on('data',d=>{
       if(!d||typeof d!=='object')return;
       if(d.type==='hello'){
+        tok=String(d.token||conn.peer).slice(0,40);
+        if(tok==='host')tok='x'+conn.peer;
         const nick=String(d.nick||'だれか').slice(0,12);
-        conns.set(conn.peer,conn);
-        const ex=players.find(x=>x.id===conn.peer);
-        if(ex)ex.nick=nick;else players.push({id:conn.peer,nick});
+        const old=conns.get(tok);if(old&&old!==conn){try{old.close()}catch(_){}}
+        conns.set(tok,conn);
+        const ex=players.find(x=>x.id===tok);
+        if(ex){ex.nick=nick;ex.online=true;if(hs&&hs.phase==='play'){const i=hs.order.indexOf(tok);if(i>=0)hs.note=`${hs.names[i]} が戻ってきました`}}
+        else players.push({id:tok,nick,online:true});
         hostBroadcast();
-      }else if(d.type==='sub'){judge(conn.peer,d)}
+      }else if(d.type==='sub'&&tok){judge(tok,d)}
+      else if(d.type==='bye'&&tok){quitPlayer(tok)}
+      else if(d.type==='pass'&&tok){usePass(tok,d)}
     });
-    const drop=()=>{conns.delete(conn.peer);players=players.filter(x=>x.id!==conn.peer);delete hcSet[conn.peer];if(hs&&hs.phase!=='play')hostBroadcast();else render()};
+    const drop=()=>{
+      if(!tok||conns.get(tok)!==conn)return;
+      conns.delete(tok);
+      const pl=players.find(x=>x.id===tok);
+      if(hs&&hs.phase==='play'&&hs.order.includes(tok)){if(pl)pl.online=false}
+      else players=players.filter(x=>x.id!==tok);
+      hostBroadcast();
+    };
     conn.on('close',drop);conn.on('error',drop);
   });
 }
+function quitPlayer(tok){
+  conns.delete(tok);players=players.filter(x=>x.id!==tok);
+  if(hs&&hs.phase==='play'){const i=hs.order.indexOf(tok);if(i>=0&&hs.alive[i]){if(hs.mode.rush){hs.alive[i]=0;hs.note=`${hs.names[i]} が部屋を出ました`;if(!hs.alive.some(Boolean))finishRush()}else{loseLife(i,'部屋を出た',true);if(!checkOver()&&i===hs.cur)nextTurn()}}}
+  hostBroadcast();
+}
 
-/* ---------- ゲスト ---------- */
+/* ---------- 接続:ゲスト ---------- */
+let leaving=false,retryTimer=null,retries=0;
 function joinRoom(c,nick){
-  setStatus('部屋をさがしています…',false);
+  setStatus('部屋をさがしています…',false);leaving=false;
   const p=new Peer();
-  let opened=false;
-  const timer=setTimeout(()=>{if(!opened){entryErr('部屋が見つかりませんでした。コードが合っているか、ホストがページを開いたままか確認してね。');try{p.destroy()}catch(_){}setStatus('未接続',false)}},12000);
-  p.on('open',id=>{
-    const conn=p.connect(PREFIX+c,{reliable:true});
-    conn.on('open',()=>{
-      opened=true;clearTimeout(timer);
-      peer=p;role='guest';code=c;myId=id;gConn=conn;
-      conn.send({type:'hello',nick});setStatus('参加中',true);render();
-    });
-    conn.on('data',d=>{
-      if(!d||d.type!=='st')return;
-      gSt=d.st;gPlayers=Array.isArray(d.players)?d.players:[];myId=d.you||myId;gRecv=Date.now();render();
-    });
-    conn.on('close',()=>{if(role==='guest'){setStatus('ホストとの接続が切れました',false)}});
-  });
+  let failed=false;
+  const fail=t=>{if(role||failed)return;failed=true;clearTimeout(timer);entryErr(t);try{p.destroy()}catch(_){}setBusy(false);setStatus('未接続',false)};
+  const timer=setTimeout(()=>fail('部屋が見つかりませんでした。コードが合っているか、ホストがページを開いたままか確認してね。'),12000);
+  p.on('open',()=>{if(!failed)connectHost(p,c,nick,()=>clearTimeout(timer))});
   p.on('error',e=>{
-    if(e.type==='peer-unavailable'){clearTimeout(timer);entryErr('部屋が見つかりませんでした。コードを確認してね。');try{p.destroy()}catch(_){}setStatus('未接続',false);return}
-    if(!opened){clearTimeout(timer);entryErr('接続できませんでした。もう一度ためしてね。');try{p.destroy()}catch(_){}setStatus('未接続',false)}
+    if(role==='guest'){if(e.type==='peer-unavailable')scheduleRetry(p,c,nick);return}
+    if(e.type==='peer-unavailable')fail('部屋が見つかりませんでした。コードを確認してね。');
+    else fail('接続できませんでした。もう一度ためしてね。');
   });
+  p.on('disconnected',()=>{if(role==='guest'&&!leaving){try{p.reconnect()}catch(_){}}});
+}
+function connectHost(p,c,nick,onFirst){
+  const conn=p.connect(PREFIX+c,{reliable:true});
+  conn.on('open',()=>{
+    if(leaving){try{conn.close()}catch(_){}return}
+    if(!role){onFirst&&onFirst();setBusy(false);peer=p;role='guest';code=c;myId=myToken}
+    if(peer!==p){try{conn.close()}catch(_){}return}
+    gConn=conn;retries=0;clearTimeout(retryTimer);
+    store.set('gs-guest',{code:c,nick,savedAt:Date.now()});
+    conn.send({type:'hello',nick,token:myToken});setStatus('参加中',true);render();
+  });
+  conn.on('data',d=>{
+    if(!d||d.type!=='st'||gConn!==conn)return;
+    gSt=d.st;gPlayers=Array.isArray(d.players)?d.players:[];myId=d.you||myId;gRecv=Date.now();
+    const sv=store.get('gs-guest');if(sv){sv.savedAt=Date.now();store.set('gs-guest',sv)}
+    render();
+  });
+  conn.on('close',()=>{if(role==='guest'&&gConn===conn&&!leaving){gConn=null;scheduleRetry(p,c,nick)}});
+}
+function scheduleRetry(p,c,nick){
+  if(leaving||role!=='guest')return;
+  clearTimeout(retryTimer);
+  if(retries>=40){setStatus('ホストにつながりません',false);return}
+  retries++;setStatus(`再接続中…(${retries})`,false);
+  retryTimer=setTimeout(()=>{
+    if(leaving||role!=='guest'||gConn)return;
+    if(p.disconnected){try{p.reconnect()}catch(_){}}
+    connectHost(p,c,nick);
+    retryTimer=setTimeout(()=>{if(!gConn)scheduleRetry(p,c,nick)},4000);
+  },3000);
 }
 
 /* ---------- 画面 ---------- */
 const curState=()=>role==='host'?hs:role==='guest'?gSt:null;
-const curPlayers=()=>role==='host'?players:gPlayers;
-function remainMs(st){
-  if(!st||st.phase!=='play')return 0;
-  if(role==='host')return Math.max(0,hs.deadline-Date.now());
-  return Math.max(0,(st.remain||0)-(Date.now()-gRecv));
+const curPlayers=()=>role==='host'?players.map(p=>({...p,hc:hcStr(p.id),on:p.online!==false?1:0})):gPlayers;
+const isRush=st=>!!(st&&st.mode&&st.mode.rush);
+/* 今の番の人(早押しは全員共通)の {main:残りの持ち時間ms, res:残りの予備時間ms} */
+function clock(st){
+  if(!st||st.phase!=='play')return {main:0,res:0};
+  const remain=role==='host'?hs.turnEnd-Date.now():(st.remain||0)-(Date.now()-gRecv);
+  const base=isRush(st)?0:(st.res[st.cur]||0);
+  return remain>0?{main:remain,res:base}:{main:0,res:Math.max(0,base+remain)};
 }
-function plItems(st,pl){
-  return st.order.map((id,i)=>{
-    const here=pl.some(p=>p.id===id);
-    const cls=[st.phase==='play'&&i===st.cur?'cur':'',st.alive[i]?'':'out'].join(' ');
-    return `<li class="${cls}">${esc(st.names[i])}${id===myId?'<span class="tag">あなた</span>':''}${st.hc&&st.hc[i]?'<span class="tag hct">ハンデ</span>':''}${here?'':'<span class="tag">退出</span>'}<span class="sc">${st.score[i]}語</span></li>`;
+const hcLabels=s=>HC.filter(h=>(s||'').includes(h[0])).map(h=>`<span class="tag hct">${h[1]}</span>`).join('');
+const modeNames=m=>MODES.filter(x=>m&&m[x[0]]).map(x=>x[1]);
+function plItems(st,pl,sortByPts){
+  const ck=clock(st),rush=isRush(st);
+  let idx=st.order.map((_,i)=>i);
+  if(sortByPts)idx.sort((a,b)=>(rush?st.pts[b]-st.pts[a]:0)||(st.alive[b]-st.alive[a])||(st.score[b]-st.score[a]));
+  return idx.map(i=>{
+    const id=st.order[i];
+    const pp=pl.find(p=>p.id===id),here=!!pp&&pp.on!==0;
+    const cls=[st.phase==='play'&&!rush&&i===st.cur?'cur':'',st.alive[i]?'':'out',rush&&st.phase==='play'&&st.ans&&st.ans[i]?'done':''].join(' ');
+    const r=st.phase==='play'&&i===st.cur?ck.res:st.res[i];
+    let meta;
+    if(rush){
+      const a=st.phase==='play'&&st.ans?st.ans[i]:null;
+      meta=`${a?`<span class="ok">${a.rank}位 +${a.pts}</span>`:''}<span><b>${st.pts[i]}点</b></span><span>${st.score[i]}語</span>`;
+    }else{
+      meta=`<span class="lv">${hearts(st.lives[i],st.lifeMax)}</span>${st.reserve?`<span>予備${Math.ceil(r/1000)}秒</span>`:''}${st.pass?`<span>${st.pass[i]>0?'パス1':'パス0'}</span>`:''}<span>${st.score[i]}語</span>`;
+    }
+    return `<li class="${cls}"><span class="nm">${esc(st.names[i])}${id===myId?'<span class="tag">あなた</span>':''}${here?'':`<span class="tag">${pp?'接続切れ':'退出'}</span>`}${hcLabels(st.hc[i])}</span><span class="meta">${meta}</span></li>`;
   }).join('');
 }
-function histItems(st){
-  const h=(st.hist||[]).slice().reverse();
-  return h.length?h.map(x=>`<li><b>${esc(x.w)}</b><span>${esc(st.names[x.p])}</span></li>`).join(''):'<li class="empty">まだありません</li>';
+function histItems(st,canX){
+  const h=(st.hist||[]).map((x,i)=>({...x,i})).reverse();
+  if(!h.length)return '<li class="empty">まだありません</li>';
+  return h.map(x=>`<li class="${x.x?'x':''}"><b>${esc(x.w)}</b><span>${esc(st.names[x.p])}${x.pts&&!x.x?` +${x.pts}`:''}${x.x?' ・却下':''}</span>${canX&&!x.x?`<button class="btn small xb" type="button" data-i="${x.i}">アウト</button>`:''}</li>`).join('');
+}
+function settingsText(st){
+  const m=modeNames(st.mode);
+  const base=isRush(st)?`${st.rounds}ラウンド ・ 1問 ${st.limit}秒`:`ライフ ${st.lifeMax} ・ 持ち時間 ${st.limit}秒 ・ 予備時間 ${st.reserve?st.reserve+'秒':'なし'}`;
+  return `モード:${m.length?m.join('+'):'ふつう'} ・ ${base}`;
 }
 function render(){
   const st=curState(),pl=curPlayers();
@@ -375,53 +629,95 @@ function render(){
   const amHost=role==='host';
   if(view==='lobby'){
     $('#codeShow').textContent=code;
-    $('#plist').innerHTML=pl.map(p=>`<li>${esc(p.nick)}${p.id==='host'?'<span class="tag">ホスト</span>':''}${p.id===myId?'<span class="tag">あなた</span>':''}${amHost?`<button class="btn small hcb${p.hc?' on':''}" type="button" data-id="${esc(p.id)}">ハンデ${p.hc?'あり':'なし'}</button>`:(p.hc?'<span class="tag hct">ハンデ</span>':'')}</li>`).join('')||'<li class="empty">読み込み中…</li>';
-    $('#hostCtl').hidden=!amHost;
-    $('#waitHost').textContent=amHost?(pl.length<2?'ひとりでスタートすると練習モード(何語つなげるか)になります。ホストがこのページを閉じると部屋がなくなるので注意。':'ホストがこのページを閉じると部屋がなくなるので注意。'):'ホストがスタートするのを待っています…';
+    $('#plist').innerHTML=pl.map(p=>`<li class="lob"><span class="nm">${esc(p.nick)}${p.id==='host'?'<span class="tag">ホスト</span>':''}${p.id===myId?'<span class="tag">あなた</span>':''}${amHost?'':hcLabels(p.hc)}</span>${amHost?`<span class="chips">${HC.map(h=>`<button class="chip${(p.hc||'').includes(h[0])?' on':''}" type="button" data-id="${esc(p.id)}" data-k="${h[0]}" aria-pressed="${(p.hc||'').includes(h[0])}">${h[1]}</button>`).join('')}</span>`:''}</li>`).join('')||'<li class="empty">読み込み中…</li>';
+    $('#hostCtl').hidden=!amHost;$('#modeBox').hidden=!amHost;
+    if(amHost){
+      $('#modeChips').innerHTML=MODES.map(m=>`<button class="chip${modeSet[m[0]]?' on':''}" type="button" data-m="${m[0]}" aria-pressed="${!!modeSet[m[0]]}">${m[1]}</button>`).join('');
+      const rush=!!modeSet.rush;
+      $('#roundsL').hidden=!rush;$('#reserveL').hidden=rush;$('#livesL').hidden=rush;
+      $('#limitName').textContent=rush?'1問の制限時間':'1ターンの持ち時間';
+    }
+    $('#settingsShow').textContent=st?settingsText(st):'';
+    $('#waitHost').textContent=amHost?(modeSet.rush?'早押しでは「たまに2連続」のハンデは効きません。':'ハンデはボタンを押した人にだけつきます(複数OK)。')+'ホストがこのページを閉じると部屋がなくなるので注意。':'ホストがスタートするのを待っています…';
   }
-  if(st)rejBtns(st);
   if(view==='play'){
+    const rush=isRush(st);
     const head=$('#pHead'),len=$('#pLen');
+    let fresh=false;
     if(lastT!==st.t){
-      lastT=st.t;$('#w').value='';
+      lastT=st.t;$('#w').value='';fresh=true;
       head.classList.remove('pop');len.parentNode.classList.remove('pop');void head.offsetWidth;
       head.classList.add('pop');len.parentNode.classList.add('pop');
     }
-    head.textContent=st.head;len.textContent=lenLabel(st.len);
-    const me=st.order.indexOf(myId),mine=st.order[st.cur]===myId;
-    const tm=$('#turnMsg');tm.classList.toggle('mine',mine);
-    tm.textContent=mine?'あなたの番!':me<0?`観戦中:${st.names[st.cur]} の番`:`${st.names[st.cur]} の番`;
+    const me=st.order.indexOf(myId);
+    const rq=rush?reqOf(st,me>=0?me:-1):reqOf(st,st.cur);
+    $('#pHeadC').textContent=st.head;$('#pPos').hidden=rq.pos!==2;
+    len.textContent=lenLabel(rq.len);$('#pLenU').hidden=rq.len===0;
+    const badges=[];
+    if(rush)badges.push(`<span class="badge rush">早押し ラウンド ${st.round}/${st.rounds}</span>`);
+    if(st.mode.ban&&st.ban)badges.push(`<span class="badge ban">禁止文字「${esc(st.ban)}」</span>`);
+    if(st.mode.daku)badges.push('<span class="badge daku">濁点・半濁点 必須</span>');
+    $('#pBadges').innerHTML=badges.join('');$('#pBadges').hidden=!badges.length;
+    let mine,msg;
+    if(rush){
+      const a=me>=0&&st.ans?st.ans[me]:null;
+      mine=me>=0&&!!st.alive[me]&&!a;
+      msg=me<0?'観戦中:早押しラウンド':a?`回答済み!${a.rank}位 +${a.pts}点`:'早押し!全員答えられます';
+    }else{
+      mine=st.order[st.cur]===myId;
+      msg=mine?'あなたの番!':me<0?`観戦中:${st.names[st.cur]} の番`:`${st.names[st.cur]} の番`;
+    }
+    if(rq.pos===2&&(mine||!rush))msg+=`(2文字目が「${st.head}」)`;
+    const tm=$('#turnMsg');tm.classList.toggle('mine',mine);tm.textContent=msg;
     $('#w').disabled=!mine;$('#send').disabled=!mine;
-    if(mine&&document.activeElement!==$('#w'))try{$('#w').focus({preventScroll:true})}catch(e){}
+    const pb=$('#pass');
+    if(rush)pb.hidden=true;
+    else{const left=st.pass&&me>=0?st.pass[me]:0;pb.hidden=me<0||!st.alive[me];pb.disabled=!mine||left<=0;pb.textContent=left>0?'パス(お題の文字を引き直す・のこり1回)':'パスは使用済み'}
+    if(fresh&&mine&&document.activeElement!==$('#w'))try{$('#w').focus({preventScroll:true})}catch(e){}
     const note=$('#note');note.hidden=!st.note;note.textContent=st.note||'';
-    $('#err').textContent=st.err&&st.err.p===myId&&st.err.n===subN?'× '+st.err.m:'';
-    $('#pl2').innerHTML=plItems(st,pl);$('#hist').innerHTML=histItems(st);
+    const er=st.errs&&st.errs[myId];
+    $('#err').textContent=er&&er.n===subN?'× '+er.m:'';
+    $('#pl2').innerHTML=plItems(st,pl,false);$('#hist').innerHTML=histItems(st,amHost);
+    $('#xHint').hidden=!amHost;
+    $('#xHint').textContent=rush?'あやしい言葉は「アウト」で却下できます(その言葉の点数がなくなります)。':'あやしい言葉は「アウト」で却下できます(言った人のライフ−1)。';
     updCount();
   }
   if(view==='over'){
     lastT=null;
-    const solo=st.order.length===1;
-    $('#winner').textContent=solo?`${st.score[0]}語つなげました`:st.win>=0?`${st.names[st.win]} の勝ち!`:'引き分け';
+    const rush=isRush(st),solo=st.order.length===1;
+    let wt;
+    if(solo)wt=rush?`${st.pts[0]}点でした`:`${st.score[0]}語つなげました`;
+    else if(st.winners&&st.winners.length>1)wt=`${st.winners.map(i=>st.names[i]).join('・')} が同点で優勝!`;
+    else wt=st.win>=0?`${st.names[st.win]} の勝ち!`:'引き分け';
+    $('#winner').textContent=wt;
     $('#overNote').textContent=st.note||'';
-    $('#pl3').innerHTML=plItems(st,pl);$('#hist2').innerHTML=histItems(st);
+    $('#pl3').innerHTML=plItems(st,pl,true);$('#hist2').innerHTML=histItems(st,false);
     $('#overHost').hidden=!amHost;$('#overWait').textContent=amHost?'':'ホストが次のゲームを始めるのを待っています…';
   }
 }
-function rejBtns(st){
-  const show=role==='host'&&st&&st.prev;
-  for(const id of ['#rej','#rej2']){const b=$(id);b.hidden=!show;if(show)b.textContent=`「${st.prev.w}」を却下する`}
-}
 function updCount(){
   const st=curState();if(!st||st.phase!=='play')return;
+  const me=st.order.indexOf(myId);
+  const rq=isRush(st)?reqOf(st,me):reqOf(st,st.cur);
   const w=norm($('#w').value);const c=$('#cnt');
-  c.textContent=w?`${w.length}文字 / お題 ${lenLabel(st.len)}文字`:'';
-  c.classList.toggle('ok',!!w&&okLen(w,st.len)&&w[0]===st.head);
+  c.textContent=w?`${w.length}文字 / お題 ${rq.len===0?'文字数自由':lenLabel(rq.len)+'文字'}`:'';
+  let ok=!!w&&okLen(w,rq.len)&&charOk(w[rq.pos-1],st.head);
+  if(ok&&st.mode.ban&&st.ban&&[...w].some(x=>x===st.ban||BIG[x]===st.ban))ok=false;
+  if(ok&&st.mode.daku&&!DAKU.test(w))ok=false;
+  c.classList.toggle('ok',ok);
 }
+let lastSec='';
 function tickUI(){
   const st=curState();if(!st||st.phase!=='play')return;
-  const r=remainMs(st),tot=(st.limit||15)*1000;
-  const bar=$('#bar');bar.style.width=Math.min(100,r/tot*100)+'%';bar.classList.toggle('low',r<4000);
-  $('#sec').textContent=(r/1000).toFixed(1)+'秒';
+  const ck=clock(st),bar=$('#bar');
+  if(ck.main>0||isRush(st)){
+    bar.style.width=Math.min(100,ck.main/(st.limit*1000)*100)+'%';bar.className=ck.main<4000&&!ck.res?'low':'';
+    $('#sec').textContent=(ck.main/1000).toFixed(1)+'秒';
+  }else{
+    bar.style.width=(st.reserve?Math.min(100,ck.res/(st.reserve*1000)*100):0)+'%';bar.className='res';
+    $('#sec').textContent='予備 '+(ck.res/1000).toFixed(1)+'秒';
+  }
+  const s=String(Math.ceil(ck.res/1000));if(s!==lastSec){lastSec=s;$('#pl2').innerHTML=plItems(st,curPlayers(),false)}
 }
 
 /* ---------- 操作 ---------- */
@@ -433,42 +729,78 @@ function getNick(){
   return n;
 }
 function needPeer(){if(typeof Peer==='undefined'){entryErr('通信の部品を読み込めませんでした。ページを再読み込みしてね。');return false}return true}
-$('#mk').addEventListener('click',()=>{const n=getNick();if(!n||!needPeer())return;entryErr('');createRoom(n)});
+$('#mk').addEventListener('click',()=>{
+  if(busy||role)return;const n=getNick();if(!n||!needPeer())return;
+  entryErr('');setBusy(true);createRoom(n);
+});
 $('#jn').addEventListener('click',()=>{
-  const n=getNick();if(!n||!needPeer())return;
+  if(busy||role)return;const n=getNick();if(!n||!needPeer())return;
   const c=$('#codeIn').value.replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0)).replace(/[^0-9]/g,'');
   if(c.length!==4){entryErr('4けたの部屋コードを入れてね');return}
-  entryErr('');joinRoom(c,n);
+  entryErr('');setBusy(true);joinRoom(c,n);
 });
 function leave(){
-  try{peer&&peer.destroy()}catch(e){}
+  leaving=true;clearTimeout(retryTimer);
+  if(role==='guest'&&gConn&&gConn.open){try{gConn.send({type:'bye'})}catch(e){}}
+  const p=peer;setTimeout(()=>{try{p&&p.destroy()}catch(e){}},300);
+  store.del('gs-host');store.del('gs-guest');
   peer=null;role=null;code=null;hs=null;hcSet={};players=[];conns=new Map();gConn=null;gSt=null;gPlayers=[];lastT=null;
-  setStatus('未接続',false);render();
+  setBusy(false);setStatus('未接続',false);showResume();render();
 }
+function showResume(){
+  const h=store.get('gs-host'),g=store.get('gs-guest'),now=Date.now();
+  const hv=h&&now-h.savedAt<FRESH&&h.hs,gv=g&&now-g.savedAt<FRESH;
+  const pick=hv&&(!gv||h.savedAt>=g.savedAt)?'host':gv?'guest':null;
+  const b=$('#resume');b.hidden=!pick;b.dataset.kind=pick||'';
+  if(pick==='host')b.textContent=`部屋 ${h.code} を復活させる(ホスト)`;
+  if(pick==='guest')b.textContent=`部屋 ${g.code} にもどる`;
+}
+$('#resume').addEventListener('click',()=>{
+  if(busy||role)return;
+  const kind=$('#resume').dataset.kind;
+  if(kind==='host'){const h=store.get('gs-host');if(!h)return;const n=$('#nick').value.trim().slice(0,12)||(h.players.find(x=>x.id==='host')||{}).nick||'ホスト';if(!needPeer())return;entryErr('');setBusy(true);createRoom(n,0,h)}
+  else if(kind==='guest'){const g=store.get('gs-guest');if(!g)return;if(!$('#nick').value.trim())$('#nick').value=g.nick||'';const n=getNick();if(!n||!needPeer())return;entryErr('');setBusy(true);joinRoom(g.code,n)}
+});
+showResume();
 $('#leave1').addEventListener('click',leave);$('#leave2').addEventListener('click',leave);
 $('#start').addEventListener('click',startGame);
 $('#again').addEventListener('click',startGame);
+$('#toLobby').addEventListener('click',()=>{if(role==='host'&&hs&&hs.phase!=='play'){players=players.filter(p=>p.online!==false);hs.phase='lobby';Object.assign(hs,settings());hostBroadcast()}});
+for(const id of ['#limit','#reserve','#lives','#rounds'])$(id).addEventListener('change',lobbySettingsChanged);
 $('#plist').addEventListener('click',e=>{
-  const b=e.target.closest('.hcb');if(!b||role!=='host')return;
-  const id=b.dataset.id;if(hcSet[id])delete hcSet[id];else hcSet[id]=1;hostBroadcast();
+  const b=e.target.closest('.chip');if(!b||role!=='host')return;
+  const o=hcSet[b.dataset.id]=hcSet[b.dataset.id]||{};const k=b.dataset.k;
+  if(o[k])delete o[k];else o[k]=1;hostBroadcast();
 });
-$('#rej').addEventListener('click',rejectLast);$('#rej2').addEventListener('click',rejectLast);
-$('#toLobby').addEventListener('click',()=>{if(role==='host'&&hs){hs.phase='lobby';hostBroadcast()}});
-$('#limit').addEventListener('change',()=>{if(role==='host'&&hs&&hs.phase==='lobby'){hs.limit=+$('#limit').value;hostBroadcast()}});
+$('#modeChips').addEventListener('click',e=>{
+  const b=e.target.closest('.chip');if(!b||role!=='host')return;
+  const k=b.dataset.m;if(modeSet[k])delete modeSet[k];else modeSet[k]=1;
+  lobbySettingsChanged();render();
+});
+$('#hist').addEventListener('click',e=>{const b=e.target.closest('.xb');if(b)rejectWord(+b.dataset.i)});
 $('#copyCode').addEventListener('click',()=>{
   const url=location.href.split('#')[0]+'#'+code;
   const txt=`限界しりとりやろう!\n部屋コード:${code}\n${url}`;
   try{navigator.clipboard.writeText(txt).then(()=>{$('#copyCode').textContent='コピーしました'},()=>{})}catch(e){}
 });
 $('#w').addEventListener('input',updCount);
+$('#pass').addEventListener('click',()=>{
+  const st=curState();if(!st||st.phase!=='play'||st.order[st.cur]!==myId)return;
+  const d={type:'pass',g:st.g,t:st.t};
+  if(role==='host')usePass('host',d);else if(gConn&&gConn.open)gConn.send(d);
+});
+/* 日本語変換を確定するEnterでは送信しない(Safariは keyCode 229 になる) */
+$('#w').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.isComposing||e.keyCode===229))e.preventDefault()});
 $('#f').addEventListener('submit',e=>{
   e.preventDefault();
   const v=$('#w').value;if(!v.trim())return;
-  const st=curState();if(!st||st.phase!=='play'||st.order[st.cur]!==myId)return;
+  const st=curState();if(!st||st.phase!=='play')return;
+  const me=st.order.indexOf(myId);
+  if(isRush(st)){if(me<0||!st.alive[me]||(st.ans&&st.ans[me]))return}else if(st.order[st.cur]!==myId)return;
   subN++;const sub={type:'sub',g:st.g,t:st.t,n:subN,w:v.slice(0,40)};
   if(role==='host')judge('host',sub);else if(gConn&&gConn.open)gConn.send(sub);
 });
-window.addEventListener('beforeunload',()=>{try{peer&&peer.destroy()}catch(e){}});
+window.addEventListener('pagehide',()=>{saveHost();try{peer&&peer.destroy()}catch(e){}});
 setInterval(hostTick,200);
 setInterval(tickUI,100);
 render();
